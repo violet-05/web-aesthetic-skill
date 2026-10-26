@@ -35,3 +35,9 @@ role 的 name 是精确可访问名称，检查空格、换行、aria-label 和�
 ## 审查达到总时限或被取消
 
 查看execution.status与review.deadline/review.cancelled。已通过步骤会保留，当前中断步骤为error，后续步骤skipped。先修正挂起页面或缩小审查范围，再合理提高reviewTimeoutMs；不要降低断言来制造通过。大量逐步截图也会消耗总预算。清理/落盘另需时间，强制结束进程不能保证报告完整。
+
+## Ubuntu 的 Chromium sandbox 启动失败
+
+如果诊断包含“No usable sandbox”或“Chromium sandboxing failed”，先确认操作系统是否限制未授权的user namespace。Ubuntu 23.10+的AppArmor策略可能阻止下载到用户目录的Chromium。不要把chromiumSandbox改为false，也不要为方便全局关闭AppArmor。
+
+本仓库GitHub CI在临时Ubuntu24.04运行器中，按已安装Chromium可执行文件的准确路径加载仅允许userns的AppArmor例外；产品代码继续启用Chromium sandbox。普通用户机器需要管理员评估并配置环境，本工具不会自行修改系统安全策略。配置依据：Chromium官方文档 https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md 。

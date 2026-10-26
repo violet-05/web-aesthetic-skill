@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-24.04, windows-latest]
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -33,6 +33,26 @@ jobs:
         run: npm ci
       - name: Install Chromium and platform dependencies
         run: npx playwright install --with-deps chromium
+      # Ubuntu AppArmor restricts downloaded browser binaries from creating user namespaces.
+      # Allow only the exact installed Chromium executables in this disposable hosted runner;
+      # never turn off Chromium sandboxing or the machine-wide AppArmor restriction.
+      - name: Allow Chromium sandbox user namespaces on the Linux runner
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          if [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = "1" ]; then
+            index=0
+            for executable in \
+              "$HOME"/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell \
+              "$HOME"/.cache/ms-playwright/chromium-*/chrome-linux64/chrome; do
+              [ -x "$executable" ] || continue
+              index=$((index + 1))
+              profile="$RUNNER_TEMP/aestheticflow-chromium-$index.apparmor"
+              printf 'abi <abi/4.0>,\ninclude <tunables/global>\nprofile aestheticflow-chromium-%s "%s" flags=(unconfined) {\n  userns,\n}\n' "$index" "$executable" > "$profile"
+              sudo apparmor_parser -r "$profile"
+            done
+            [ "$index" -gt 0 ] || { echo "No installed Chromium binary found"; exit 1; }
+          fi
       - name: Type checks, lint, unit tests, real-browser tests, build and skill validation
         run: npm run validate
       - name: Verify independently installed package

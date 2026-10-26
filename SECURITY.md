@@ -23,3 +23,5 @@ Chromium 使用临时上下文、sandbox、受认证的本地代理。代理在�
 核心 CLI 不修改目标代码。Skill 要求用户授权后最小范围修改，保护未提交改动，保留前后证据。安装器不覆盖既有 Skill；compare 输出不覆盖既有文件。发现安全问题请通过 GitHub 仓库 Security → Report a vulnerability 私密报告：https://github.com/violet-05/web-aesthetic-skill/security/advisories/new 。提供最小本地复现与受影响版本，不要在公开 Issue 中粘贴凭据或敏感页面内容。如果私密入口暂不可用，可先发一个不含漏洞细节的 Issue，请维护者安排私密沟通。
 
 滚动可能触发站点自己的加载、埋点或脚本行为，因此lazyLoad默认关闭；不会无差别点击。步骤截图可能捕获表单内容，默认关闭。不要用真实密码、生产敏感表单或未授权站点测试这些选项。总预算不是硬性进程隔离，Node事件循环卡死、浏览器关闭故障或文件系统挂起仍需系统级控制。
+
+GitHub CI的Linux运行器使用对已安装Chromium准确路径生效的临时AppArmor userns例外，以支持其自身sandbox；没有全局关闭AppArmor或在产品中关闭Chromium sandbox。该例外仅用于一次性的CI环境，不应不经评估照搬到生产主机。
