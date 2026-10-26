@@ -1,0 +1,42 @@
+{
+  "url": "http://127.0.0.1:3000",
+  "project": "你的项目",
+  "output": "artifacts/demo",
+  "requiredElements": [
+    {
+      "css": "main"
+    }
+  ],
+  "interactions": [],
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "allowOrigins": [],
+  "allowPrivateNetwork": false,
+  "waitMs": 300,
+  "timeoutMs": 10000,
+  "maxIterations": 3,
+  "failOn": "P1",
+  "weights": {
+    "hierarchy": 20,
+    "layout": 20,
+    "color": 15,
+    "interaction": 20,
+    "responsive": 15,
+    "accessibility": 10
+  }
+}

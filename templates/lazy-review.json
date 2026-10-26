@@ -1,0 +1,19 @@
+{
+  "url": "http://127.0.0.1:4173/lazy",
+  "project": "真实懒加载检查",
+  "output": "artifacts/lazy",
+  "viewports": [
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "reviewTimeoutMs": 30000,
+  "lazyLoad": {
+    "enabled": true,
+    "maxScrolls": 12,
+    "waitMs": 150,
+    "maxDurationMs": 5000
+  }
+}

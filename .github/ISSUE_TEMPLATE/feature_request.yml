@@ -1,0 +1,18 @@
+name: Feature request / 功能建议
+description: Suggest a scoped improvement with a concrete user task.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: User task / 要解决的任务
+      description: What workflow is blocked or unnecessarily difficult?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal and verification / 建议与验证方法
+      description: Explain the smallest useful change and how to verify it.
+    validations:
+      required: true

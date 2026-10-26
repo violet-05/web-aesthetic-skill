@@ -1,0 +1,58 @@
+{
+  "url": "http://127.0.0.1:4173/broken",
+  "project": "已知缺陷回归验证",
+  "output": "artifacts/broken",
+  "timeoutMs": 1200,
+  "interactions": [
+    {
+      "name": "save-draft",
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "保存草稿"
+          }
+        },
+        {
+          "action": "expectText",
+          "target": {
+            "css": "#save-status"
+          },
+          "text": "保存成功"
+        }
+      ]
+    },
+    {
+      "name": "keyboard-focus",
+      "steps": [
+        {
+          "action": "press",
+          "target": {
+            "css": "body"
+          },
+          "key": "Tab"
+        },
+        {
+          "action": "press",
+          "target": {
+            "css": "#broken-button"
+          },
+          "key": "Tab"
+        },
+        {
+          "action": "expectFocused",
+          "target": {
+            "css": "#no-focus"
+          }
+        },
+        {
+          "action": "checkFocusIndicator",
+          "target": {
+            "css": "#no-focus"
+          }
+        }
+      ]
+    }
+  ]
+}

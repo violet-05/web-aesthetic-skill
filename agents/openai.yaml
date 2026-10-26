@@ -1,0 +1,6 @@
+interface:
+  display_name: "Web Aesthetic"
+  short_description: "基于产品定位与真实浏览器证据改善网页设计和交互"
+  default_prompt: "Use $web-aesthetic to design or review this web interface, verify it in a real browser, and distinguish measured issues from visual judgment."
+policy:
+  allow_implicit_invocation: true

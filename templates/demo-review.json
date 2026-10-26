@@ -1,0 +1,183 @@
+{
+  "url": "http://127.0.0.1:4173/good",
+  "project": "Fieldnotes · 真实浏览器示例",
+  "output": "artifacts/demo",
+  "requiredElements": [
+    {
+      "role": "heading",
+      "name": "留一点时间， 给真正重要的事。"
+    }
+  ],
+  "interactions": [
+    {
+      "name": "menu",
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          }
+        },
+        {
+          "action": "expectVisible",
+          "target": {
+            "role": "navigation",
+            "name": "主要导航"
+          }
+        },
+        {
+          "action": "press",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          },
+          "key": "Escape"
+        },
+        {
+          "action": "expectHidden",
+          "target": {
+            "role": "navigation",
+            "name": "主要导航"
+          }
+        },
+        {
+          "action": "expectFocused",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          }
+        },
+        {
+          "action": "checkFocusIndicator",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          }
+        }
+      ]
+    },
+    {
+      "name": "dialog",
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "了解这本手记"
+          }
+        },
+        {
+          "action": "expectVisible",
+          "target": {
+            "role": "dialog",
+            "name": "关于 Fieldnotes"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "关闭介绍"
+          }
+        },
+        {
+          "action": "expectHidden",
+          "target": {
+            "role": "dialog",
+            "name": "关于 Fieldnotes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "subscribe",
+      "steps": [
+        {
+          "action": "fill",
+          "target": {
+            "label": "邮箱地址"
+          },
+          "value": "reader@example.test"
+        },
+        {
+          "action": "expectValue",
+          "target": {
+            "label": "邮箱地址"
+          },
+          "value": "reader@example.test"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "订阅来信"
+          }
+        },
+        {
+          "action": "expectText",
+          "target": {
+            "css": "#message"
+          },
+          "text": "已订阅（本地演示）"
+        },
+        {
+          "action": "expectEnabled",
+          "target": {
+            "role": "button",
+            "name": "订阅来信"
+          }
+        }
+      ]
+    },
+    {
+      "name": "keyboard",
+      "steps": [
+        {
+          "action": "press",
+          "target": {
+            "css": "body"
+          },
+          "key": "Tab"
+        },
+        {
+          "action": "expectFocused",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          }
+        },
+        {
+          "action": "checkFocusIndicator",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          }
+        }
+      ]
+    },
+    {
+      "name": "navigation",
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "目录"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "阅读手记"
+          }
+        },
+        {
+          "action": "expectUrl",
+          "url": "/good#journal"
+        }
+      ]
+    }
+  ]
+}

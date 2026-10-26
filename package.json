@@ -1,0 +1,81 @@
+{
+  "name": "web-aesthetic-skill",
+  "version": "0.2.0",
+  "description": "AestheticFlow — evidence-first local browser review and Web design skill",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "web-aesthetic": "dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "SKILL.md",
+    "agents",
+    "references",
+    "styles",
+    "workflows",
+    "checklists",
+    "templates",
+    "docs",
+    "examples",
+    "scripts/install-skill.mjs",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src tests scripts",
+    "format": "biome check --write src tests scripts",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
+    "test:integration": "tsx --test --test-concurrency=1 tests/integration/*.test.ts",
+    "skill-check": "tsx src/cli.ts skill-check",
+    "inspect-project": "tsx src/cli.ts inspect-project",
+    "demo:serve": "tsx tests/fixtures/server.ts",
+    "demo:review": "tsx src/cli.ts review --config templates/demo-review.json",
+    "install:skill": "node scripts/install-skill.mjs",
+    "validate": "npm run typecheck && npm run lint && npm test && npm run build && npm run skill-check",
+    "test:package": "node --test tests/package/*.test.mjs",
+    "prepack": "npm run build",
+    "demo:iteration": "npm run build && node scripts/demo-iteration.mjs",
+    "demo:followup": "npm run build && node --import tsx scripts/demo-followup.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.64.1",
+    "zod": "4.6.7",
+    "ipaddr.js": "2.5.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "tsx": "4.23.15",
+    "@types/node": "24.19.2",
+    "@biomejs/biome": "2.6.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/violet-05/web-aesthetic-skill.git"
+  },
+  "homepage": "https://github.com/violet-05/web-aesthetic-skill#readme",
+  "bugs": {
+    "url": "https://github.com/violet-05/web-aesthetic-skill/issues"
+  },
+  "keywords": [
+    "agent-skill",
+    "web-design",
+    "playwright",
+    "ui-ux",
+    "browser-testing",
+    "aestheticflow"
+  ]
+}

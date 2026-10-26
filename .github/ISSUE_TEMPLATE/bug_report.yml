@@ -1,0 +1,32 @@
+name: Bug report / 问题报告
+description: Report a reproducible CLI, browser-check or Skill problem.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "请勿上传真实凭据、私有项目内容或敏感截图。安全漏洞请使用仓库 Security 页面的私密报告入口。"
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 环境
+      description: OS, Node.js version and AestheticFlow version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction / 最小复现
+      description: Use a synthetic local page and redacted configuration where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result / 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence / 脱敏证据
+      description: Relevant rule IDs, statuses, errors or a non-sensitive screenshot.
