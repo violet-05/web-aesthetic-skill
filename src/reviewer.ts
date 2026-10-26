@@ -6,6 +6,7 @@ import { createSession, navigate } from "./browser/session.js";
 import { runScenario, type StepCapture } from "./checks/interaction-checks.js";
 import { runPageChecks } from "./checks/page-checks.js";
 import { configSchema, dimensions, type ReviewConfig, type Viewport } from "./config.js";
+import { evaluatePixelBaseline } from "./pixel/baseline.js";
 import { Collector } from "./reports/collector.js";
 import { verificationProfile } from "./reports/profile.js";
 import { summarize } from "./reports/summary.js";
@@ -19,11 +20,12 @@ const limits = [
   "没有连接视觉模型；审美评分为 null。视觉节奏、品牌适配、色彩对比、动效质量与空白分布需要人工或后续视觉评审。",
   "只执行显式配置的交互；未配置按钮不会被随机点击。每个场景使用独立上下文，不共享 Cookie 或存储。",
   "启发式提示不是设计失败事实，也不是 WCAG 合规认证；名称、尺寸、遮挡与焦点绘制均存在例外。",
-  "浏览器使用 reduced-motion: reduce、deviceScaleFactor: 1，不模拟真实触屏或完整动画时间线。步骤截图不强制结束动画，但不是动画录像。",
+  "浏览器使用 reduced-motion: reduce、deviceScaleFactor: 1；touch 视口可执行 tap，但不模拟设备型号、真实手势轨迹或完整动画时间线。步骤截图不是动画录像。",
   "网络通过校验并固定解析 IP 的本地代理；精确 origin 允许列表适用于导航、子资源和重定向。WebSocket、Service Worker、下载及弹出窗口流程未验证。",
   "DOM 最多采样 2500 个元素、200 张图片/控件、500 条诊断。超长页面截图降级首屏；未加载图片不算通过。",
-  "懒加载预处理默认关闭；开启后只滚动文档，不处理嵌套滚动区、frame 或所有虚拟列表。到达次数/时间限制时标记未知。",
+  "懒加载预处理默认关闭；可选用有界文档滚动和自动发现的可滚动容器。仍不进入 frame、不识别 transform 驱动的全部虚拟列表；到达次数/容器/时间限制时标记未知。",
   "步骤截图默认关闭，开启后每视口有数量上限。截图增加时间与隐私暴露；达到上限的证据不会伪报保存成功。",
+  "像素基线默认关闭；开启后只比较同浏览器、同 URL、同视口的基线截图。像素差不是审美分数，字体、动态内容、抗锯齿与有意改版需要人工区分。",
   "审查总时限覆盖浏览器工作；到期或取消会关闭会话并保留报告。清理和报告落盘可能另需时间，不是操作系统级强制隔离。",
   "URL 查询参数与常见凭据模式已脱敏，但截图、页面正文、错误文本仍可能含敏感信息。",
   "程序不修改目标项目、不上传截图、不调用付费 API；尚无自主代码修复控制器。",
@@ -53,7 +55,7 @@ export async function review(
   const deadline = createReviewDeadline(config.reviewTimeoutMs, options.signal),
     signal = deadline.signal;
   const report: Report = {
-    schemaVersion: "1.1",
+    schemaVersion: "1.3",
     toolVersion: VERSION,
     runId,
     verificationProfile: verificationProfile(config),
@@ -61,7 +63,10 @@ export async function review(
     targetUrl: redactUrl(config.url),
     startedAt: new Date().toISOString(),
     finishedAt: "",
-    browser: { name: "Chromium", version: "not-started" },
+    browser: {
+      name: { chromium: "Chromium", firefox: "Firefox", webkit: "WebKit" }[config.browser],
+      version: "not-started",
+    },
     viewports: config.viewports,
     status: "incomplete",
     checks: [],
@@ -110,6 +115,7 @@ export async function review(
         [`screenshot.scenario-${scene.name}`, "layout"],
       );
     if (config.stepScreenshots.mode !== "none") planned.push(["screenshots.step-coverage", "interaction"]);
+    if (config.pixelBaseline.enabled) planned.push(["pixel.baseline", "layout"]);
     for (const [id, dimension] of planned)
       if (!has(v.name, id)) c.check(v.name, id, dimension, "skipped", reason);
   }
@@ -118,7 +124,7 @@ export async function review(
     v: Viewport,
     phase: string,
     state?: { scenario: string; stepIndex: number; action: string },
-  ): Promise<StepCapture> {
+  ): Promise<StepCapture & { image?: Screenshot }> {
     throwIfAborted(signal);
     try {
       const image = await abortable(capture(page, config, v, directory, runId, phase, state), signal);
@@ -128,11 +134,15 @@ export async function review(
         v.name,
         `screenshot.${phase}`,
         "layout",
-        image.truncated ? "unknown" : "pass",
-        image.truncated ? "页面过长，已降级首屏截图" : "真实截图已保存",
+        image.truncated || image.maskMissing?.length ? "unknown" : "pass",
+        image.truncated
+          ? "页面过长，已降级首屏截图"
+          : image.maskMissing?.length
+            ? "截图已保存，但部分像素遮罩未匹配元素"
+            : "真实截图已保存",
         { ...image },
       );
-      return { status: "pass", path: image.path };
+      return { status: "pass", path: image.path, image };
     } catch (error) {
       c.check(v.name, `screenshot.${phase}`, "layout", "error", "截图未完成", {
         error: message(signal.aborted ? signal.reason : error),
@@ -240,7 +250,7 @@ export async function review(
                 "layout",
                 result.complete ? "pass" : "unknown",
                 result.complete
-                  ? "文档滚动预处理达到观测范围内的稳定底部"
+                  ? `滚动预处理达到观测范围内的稳定底部${config.lazyLoad.scrollContainers.enabled ? `，包含 ${result.containers.length} 个可滚动容器` : ""}`
                   : "懒加载预处理达到限制，不能确认全部内容已加载",
                 { ...result, limits: config.lazyLoad },
               );
@@ -260,7 +270,50 @@ export async function review(
             );
           const snapshot = await abortable(inspectPage(page), signal);
           await runPageChecks(page, snapshot, viewport.name, c, config, signal);
-          await shot(page, viewport, "baseline");
+          const baselineShot = await shot(page, viewport, "baseline");
+          if (config.pixelBaseline.enabled) {
+            if (!baselineShot.image) {
+              c.check(
+                viewport.name,
+                "pixel.baseline",
+                "layout",
+                "error",
+                "基线截图未完成，无法进行像素比较",
+                {},
+              );
+            } else {
+              try {
+                const evaluation = await evaluatePixelBaseline({
+                  config,
+                  viewport,
+                  screenshot: baselineShot.image,
+                  runDirectory: directory,
+                  runId,
+                  browserVersion: report.browser.version,
+                });
+                const pixel = c.check(
+                  viewport.name,
+                  "pixel.baseline",
+                  "layout",
+                  evaluation.status,
+                  evaluation.summary,
+                  evaluation.evidence,
+                );
+                if (evaluation.diff) report.screenshots.push(evaluation.diff);
+                if (evaluation.status === "fail")
+                  c.issue(
+                    pixel,
+                    "P2",
+                    "像素基线差异超过阈值",
+                    "打开 diff 图并区分真实回归、字体渲染、动态内容和有意改版；像素差异本身不是审美下降证明。",
+                  );
+              } catch (error) {
+                c.check(viewport.name, "pixel.baseline", "layout", "error", "像素基线比较未完成", {
+                  error: message(error),
+                });
+              }
+            }
+          }
         }
       } catch (error) {
         throwIfAborted(signal);
@@ -354,7 +407,7 @@ export async function review(
         check,
         "P0",
         "浏览器会话未完成",
-        "检查 Chromium 安装、权限、网络配置与运行诊断；这不等同于网站自身缺陷。",
+        "检查所选浏览器引擎安装、权限、网络配置与运行诊断；这不等同于网站自身缺陷。",
       );
     }
   } finally {

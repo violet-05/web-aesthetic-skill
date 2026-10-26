@@ -14,8 +14,16 @@ export const viewportSchema = z
     name: z.string().regex(/^[a-z0-9-]{1,40}$/),
     width: z.number().int().min(240).max(3840),
     height: z.number().int().min(240).max(2160),
+    touch: z.boolean().default(false),
   })
   .strict();
+export const browserEngines = ["chromium", "firefox", "webkit"] as const;
+export const browserEngineSchema = z.enum(browserEngines);
+export const browserListSchema = z
+  .array(browserEngineSchema)
+  .min(1)
+  .max(browserEngines.length)
+  .refine((value) => new Set(value).size === value.length, "Browser engines must be unique");
 export const locatorSchema = z.union([
   z
     .object({
@@ -43,6 +51,7 @@ export const locatorSchema = z.union([
 const targeted = { target: locatorSchema };
 export const stepSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("click"), ...targeted }).strict(),
+  z.object({ action: z.literal("tap"), ...targeted }).strict(),
   z.object({ action: z.literal("fill"), ...targeted, value: z.string().max(5000) }).strict(),
   z.object({ action: z.literal("press"), ...targeted, key: z.string().min(1).max(40) }).strict(),
   z.object({ action: z.literal("expectVisible"), ...targeted }).strict(),
@@ -63,9 +72,9 @@ export const scenarioSchema = z
   })
   .strict();
 export const defaultViewports = [
-  { name: "desktop", width: 1440, height: 900 },
-  { name: "tablet", width: 768, height: 1024 },
-  { name: "mobile", width: 390, height: 844 },
+  { name: "desktop", width: 1440, height: 900, touch: false },
+  { name: "tablet", width: 768, height: 1024, touch: false },
+  { name: "mobile", width: 390, height: 844, touch: false },
 ];
 const weightSchema = z
   .object({
@@ -84,6 +93,13 @@ export const lazyLoadSchema = z
     maxScrolls: z.number().int().min(1).max(40).default(12),
     waitMs: z.number().int().min(25).max(2000).default(150),
     maxDurationMs: z.number().int().min(100).max(30000).default(5000),
+    scrollContainers: z
+      .object({
+        enabled: z.boolean().default(false),
+        maxContainers: z.number().int().min(1).max(20).default(8),
+      })
+      .strict()
+      .default({ enabled: false, maxContainers: 8 }),
   })
   .strict();
 export const stepScreenshotSchema = z
@@ -92,9 +108,45 @@ export const stepScreenshotSchema = z
     maxPerViewport: z.number().int().min(1).max(80).default(20),
   })
   .strict();
+export const pixelMaskSchema = z
+  .object({
+    selector: z.string().min(1).max(500),
+    reason: z.string().max(200).optional(),
+  })
+  .strict();
+export const pixelBaselineSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    mode: z.enum(["compare", "update"]).default("compare"),
+    directory: z.string().min(1).max(1000).default("artifacts/pixel-baselines"),
+    maxDiffPixelRatio: z.number().min(0).max(1).default(0.005),
+    threshold: z.number().min(0).max(1).default(0.1),
+    includeAA: z.boolean().default(false),
+    maxPixels: z.number().int().min(1000).max(50000000).default(20000000),
+    masks: z
+      .array(pixelMaskSchema)
+      .max(20)
+      .default([])
+      .refine(
+        (value) => new Set(value.map((mask) => mask.selector)).size === value.length,
+        "Mask selectors must be unique",
+      ),
+  })
+  .strict()
+  .default({
+    enabled: false,
+    mode: "compare",
+    directory: "artifacts/pixel-baselines",
+    maxDiffPixelRatio: 0.005,
+    threshold: 0.1,
+    includeAA: false,
+    maxPixels: 20000000,
+    masks: [],
+  });
 export const configSchema = z
   .object({
     url: z.string().min(1),
+    browser: browserEngineSchema.default("chromium"),
     project: z.string().max(150).default("Web review"),
     output: z.string().min(1).default("artifacts"),
     viewports: z
@@ -104,8 +156,15 @@ export const configSchema = z
       .default(defaultViewports)
       .refine((v) => new Set(v.map((x) => x.name)).size === v.length, "Viewport names must be unique"),
     reviewTimeoutMs: z.number().int().min(1000).max(600000).default(120000),
-    lazyLoad: lazyLoadSchema.default({ enabled: false, maxScrolls: 12, waitMs: 150, maxDurationMs: 5000 }),
+    lazyLoad: lazyLoadSchema.default({
+      enabled: false,
+      maxScrolls: 12,
+      waitMs: 150,
+      maxDurationMs: 5000,
+      scrollContainers: { enabled: false, maxContainers: 8 },
+    }),
     stepScreenshots: stepScreenshotSchema.default({ mode: "none", maxPerViewport: 20 }),
+    pixelBaseline: pixelBaselineSchema,
     timeoutMs: z.number().int().min(500).max(60000).default(10000),
     waitMs: z.number().int().min(0).max(10000).default(300),
     waitFor: locatorSchema.optional(),
@@ -134,6 +193,7 @@ export const configSchema = z
   .strict();
 export type ReviewConfig = z.infer<typeof configSchema>;
 export type Viewport = z.infer<typeof viewportSchema>;
+export type BrowserEngine = z.infer<typeof browserEngineSchema>;
 export type Target = z.infer<typeof locatorSchema>;
 export type Step = z.infer<typeof stepSchema>;
 export type Scenario = z.infer<typeof scenarioSchema>;
@@ -149,6 +209,9 @@ export function parseViewports(value: string): Viewport[] {
         return { name: `viewport-${i + 1}`, width: Number(match[1]), height: Number(match[2]) };
       }),
     );
+}
+export function parseBrowsers(value: string): BrowserEngine[] {
+  return browserListSchema.parse(value.split(",").map((item) => item.trim()));
 }
 export async function loadConfig(
   file?: string,

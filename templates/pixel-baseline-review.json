@@ -1,0 +1,29 @@
+{
+  "url": "http://127.0.0.1:4173/cases/pixel-dynamic",
+  "browser": "chromium",
+  "project": "像素基线 · 动态区域遮罩",
+  "output": "artifacts/pixel-review",
+  "viewports": [
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "reviewTimeoutMs": 30000,
+  "pixelBaseline": {
+    "enabled": true,
+    "mode": "compare",
+    "directory": "artifacts/pixel-baselines",
+    "maxDiffPixelRatio": 0.005,
+    "threshold": 0.1,
+    "includeAA": false,
+    "maxPixels": 20000000,
+    "masks": [
+      {
+        "selector": "#dynamic-box",
+        "reason": "随机颜色动态区域"
+      }
+    ]
+  }
+}

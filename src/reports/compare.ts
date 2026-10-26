@@ -1,11 +1,13 @@
 import { z } from "zod";
 
 const reportSchema = z.object({
-  schemaVersion: z.enum(["1.0", "1.1"]),
+  schemaVersion: z.enum(["1.0", "1.1", "1.2", "1.3"]),
   runId: z.string(),
   verificationProfile: z.string(),
   targetUrl: z.string(),
-  viewports: z.array(z.object({ name: z.string(), width: z.number(), height: z.number() })),
+  viewports: z.array(
+    z.object({ name: z.string(), width: z.number(), height: z.number(), touch: z.boolean().optional() }),
+  ),
   checks: z.array(
     z.object({
       id: z.string(),
@@ -36,7 +38,7 @@ export function compareReports(beforeInput: unknown, afterInput: unknown, iterat
   if (before.targetUrl !== after.targetUrl) throw new Error("对比目标 URL 不一致");
   const viewportKeys = (v: typeof before.viewports) =>
     v
-      .map((x) => `${x.name}:${x.width}x${x.height}`)
+      .map((x) => `${x.name}:${x.width}x${x.height}:touch=${x.touch === true}`)
       .sort()
       .join("|");
   if (viewportKeys(before.viewports) !== viewportKeys(after.viewports)) throw new Error("对比视口配置不一致");

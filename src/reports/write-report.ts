@@ -34,5 +34,9 @@ export async function writeReport(report: Report, directory: string): Promise<vo
       "diagnostics/interaction-results.json",
       report.checks.filter((c) => c.dimension === "interaction" || c.id.startsWith("a11y.focus.")),
     ),
+    json(
+      "diagnostics/pixel-baseline-results.json",
+      report.checks.filter((c) => c.id === "pixel.baseline"),
+    ),
   ]);
 }

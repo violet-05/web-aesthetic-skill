@@ -34,8 +34,10 @@ export function renderHtml(r: Report): string {
     e(r.project) +
     "</title><style>" +
     css +
-    '</style></head><body><header><a href="#main" class="skip">跳到报告</a><div class="brand"><span class="mark">A/</span><span>AestheticFlow<br><small>WEB QUALITY / EVIDENCE FIRST</small></span></div><span class="edition">LOCAL REVIEW · v0.2</span></header><main id="main"><section class="intro"><p class="eyebrow">BROWSER REVIEW / ' +
+    '</style></head><body><header><a href="#main" class="skip">跳到报告</a><div class="brand"><span class="mark">A/</span><span>AestheticFlow<br><small>WEB QUALITY / EVIDENCE FIRST</small></span></div><span class="edition">LOCAL REVIEW · v0.5</span></header><main id="main"><section class="intro"><p class="eyebrow">BROWSER REVIEW / ' +
     e(r.startedAt.slice(0, 10)) +
+    " / " +
+    e(r.browser.name) +
     '</p><h1>让设计判断，<br>有据可依。</h1><div class="intro-bottom"><div><h2>' +
     e(r.project) +
     '</h2><p class="url">' +
@@ -83,7 +85,7 @@ export function renderHtml(r: Report): string {
           )
           .join("")
       : '<p class="notice">自动检查未发现问题，不代表整体视觉、全部交互或无障碍合规通过。</p>') +
-    '</section><section id="screens"><div class="section-title"><h2>02 / 实际截图</h2><span>' +
+    '</section><section id="screens"><div class="section-title"><h2>02 / 截图与像素证据</h2><span>' +
     r.screenshots.length +
     ' captures</span></div><div class="gallery">' +
     r.screenshots
@@ -95,8 +97,10 @@ export function renderHtml(r: Report): string {
           e(safeImage(s.path)) +
           '" alt="' +
           e(`${s.viewport} / ${s.phase}`) +
-          ' 实际页面截图"></a><figcaption><strong>' +
-          e(s.viewport) +
+          (s.kind === "diff"
+            ? ' 像素差异图"></a><figcaption><strong>'
+            : ' 实际页面截图"></a><figcaption><strong>') +
+          e(s.kind === "diff" ? `像素差异图 · ${s.viewport}` : s.viewport) +
           " · " +
           s.width +
           " × " +

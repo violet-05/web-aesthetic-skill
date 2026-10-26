@@ -32,8 +32,10 @@ test("npm pack artifact installs independently, CLI reviews a real page and skil
       timeout: 30000,
       windowsHide: true,
     });
-  assert.equal(run(["--version"]).trim(), "0.2.0");
+  assert.equal(run(["--version"]).trim(), "0.5.0");
   assert.ok(run(["--help"]).includes("compare"));
+  assert.ok(run(["--help"]).includes("matrix"));
+  assert.ok(run(["--help"]).includes("--pixel-baseline"));
   assert.equal(JSON.parse(run(["skill-check"])).ok, true);
   assert.equal(JSON.parse(run(["inspect-project", process.cwd()])).hasPackage, true);
   const installer = join(pkg, "scripts", "install-skill.mjs");
@@ -92,7 +94,7 @@ test("npm pack artifact installs independently, CLI reviews a real page and skil
     assert.equal(result.screenshots, 1);
     assert.equal(result.summary.failed, 0);
     const report = JSON.parse(await readFile(result.json, "utf8"));
-    assert.equal(report.schemaVersion, "1.1");
+    assert.equal(report.schemaVersion, "1.3");
     assert.equal(report.summary.aestheticScore, null);
     console.log("Installed-package review:", resolve(result.report));
   } finally {

@@ -18,11 +18,14 @@ export function within(root: string, candidate: string): string {
     throw new Error("输出路径越界");
   return full;
 }
-export async function createRunDirectory(output: string): Promise<{ directory: string; runId: string }> {
+export async function createRunDirectory(
+  output: string,
+  prefix = "review",
+): Promise<{ directory: string; runId: string }> {
   const outputRoot = resolve(output);
   await mkdir(outputRoot, { recursive: true });
   const realRoot = await realpath(outputRoot);
-  const runId = `review-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
+  const runId = `${prefix}-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
   const directory = within(realRoot, runId);
   await mkdir(directory);
   await mkdir(within(directory, "screenshots"));

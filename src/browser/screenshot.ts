@@ -15,6 +15,17 @@ export async function capture(
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
   const truncated = !state && config.fullPage && height > config.maxScreenshotHeight;
   const fullPage = !state && config.fullPage && !truncated;
+  const maskSelectors = config.pixelBaseline.enabled
+    ? config.pixelBaseline.masks.map((mask) => mask.selector)
+    : [];
+  const maskLocators = maskSelectors.map((selector) => page.locator(selector));
+  const maskMissing = (
+    await Promise.all(
+      maskSelectors.map(async (selector, index) =>
+        ((await maskLocators[index]?.count()) ?? 0) === 0 ? selector : "",
+      ),
+    )
+  ).filter(Boolean);
   const file =
     "screenshots/" +
     safeSlug(new URL(config.url).pathname) +
@@ -34,6 +45,7 @@ export async function capture(
   const png = await page.screenshot({
     path: within(directory, file),
     fullPage,
+    ...(maskLocators.length ? { mask: maskLocators, maskColor: "#000000" } : {}),
     animations: state ? "allow" : "disabled",
     timeout: config.timeoutMs,
   });
@@ -46,6 +58,8 @@ export async function capture(
     capturedAt: new Date().toISOString(),
     truncated,
     scope: fullPage ? "page" : "viewport",
+    kind: "browser",
+    ...(maskSelectors.length ? { maskSelectors, maskMissing } : {}),
     ...state,
   };
 }

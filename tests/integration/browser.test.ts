@@ -58,7 +58,7 @@ test("real Chromium: three viewports, PNG evidence, menus/dialog/forms/navigatio
     assert.equal(png.readUInt32BE(16), screenshot.width);
     assert.equal(png.readUInt32BE(20), screenshot.height);
     const json = JSON.parse(await readFile(join(directory, "report.json"), "utf8"));
-    assert.equal(json.schemaVersion, "1.1");
+    assert.equal(json.schemaVersion, "1.3");
     assert.equal(json.summary.aestheticScore, null);
     assert.ok((await readFile(join(directory, "report.html"), "utf8")).includes("实际截图"));
     assert.ok((await readFile(join(directory, "metadata.json"), "utf8")).includes("Chromium"));

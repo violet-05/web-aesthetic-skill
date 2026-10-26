@@ -1,11 +1,17 @@
-import { type Browser, type BrowserContext, chromium, type Page } from "playwright";
-import type { ReviewConfig, Viewport } from "../config.js";
+import { type Browser, type BrowserContext, chromium, firefox, type Page, webkit } from "playwright";
+import type { BrowserEngine, ReviewConfig, Viewport } from "../config.js";
 import type { Diagnostic, Report } from "../reports/types.js";
 import { abortable, pause, throwIfAborted } from "../utils/cancellation.js";
 import { message, redact, redactUrl } from "../utils/safety.js";
 import { startEgressProxy } from "./egress-proxy.js";
 import { locate } from "./locators.js";
 import { NetworkPolicy } from "./network-policy.js";
+
+const engineLabels: Record<BrowserEngine, string> = {
+  chromium: "Chromium",
+  firefox: "Firefox",
+  webkit: "WebKit",
+};
 export async function createSession(config: ReviewConfig, report: Report, signal?: AbortSignal) {
   throwIfAborted(signal);
   const policy = new NetworkPolicy(config);
@@ -33,26 +39,29 @@ export async function createSession(config: ReviewConfig, report: Report, signal
   let browser: Browser;
   try {
     throwIfAborted(signal);
-    browser = await abortable(
-      chromium.launch({
-        headless: true,
-        chromiumSandbox: true,
-        timeout: config.timeoutMs,
-        proxy: {
-          server: proxy.server,
-          username: proxy.username,
-          password: proxy.password,
-          bypass: "<-loopback>",
-        },
-        args: [
-          "--disable-quic",
-          "--disable-background-networking",
-          "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
-        ],
-      }),
-      signal,
-      (late) => late.close(),
-    );
+    const proxied = {
+      server: proxy.server,
+      username: proxy.username,
+      password: proxy.password,
+      bypass: "<-loopback>",
+    };
+    const launch = () => {
+      if (config.browser === "chromium")
+        return chromium.launch({
+          headless: true,
+          chromiumSandbox: true,
+          timeout: config.timeoutMs,
+          proxy: proxied,
+          args: [
+            "--disable-quic",
+            "--disable-background-networking",
+            "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+          ],
+        });
+      if (config.browser === "firefox") return firefox.launch({ headless: true, timeout: config.timeoutMs });
+      return webkit.launch({ headless: true, timeout: config.timeoutMs });
+    };
+    browser = await abortable(launch(), signal, (late) => late.close());
   } catch (error) {
     recording = false;
     await proxy.close();
@@ -81,7 +90,7 @@ export async function createSession(config: ReviewConfig, report: Report, signal
     await close();
     throwIfAborted(signal);
   }
-  report.browser.version = browser.version();
+  report.browser = { name: engineLabels[config.browser], version: browser.version() };
   function origin(url?: string): Diagnostic["origin"] {
     if (!url) return "unknown";
     try {
@@ -97,6 +106,16 @@ export async function createSession(config: ReviewConfig, report: Report, signal
       browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
         deviceScaleFactor: 1,
+        hasTouch: viewport.touch,
+        proxy:
+          config.browser === "chromium"
+            ? undefined
+            : {
+                server: proxy.server,
+                username: proxy.username,
+                password: proxy.password,
+                bypass: "<-loopback>",
+              },
         serviceWorkers: "block",
         acceptDownloads: false,
         reducedMotion: "reduce",
@@ -111,7 +130,7 @@ export async function createSession(config: ReviewConfig, report: Report, signal
         viewport: viewport.name,
         kind: "blocked",
         url: redactUrl(ws.url()),
-        message: "第一版禁用 WebSocket；依赖实时连接的功能未完整验证",
+        message: "当前版本禁用 WebSocket；依赖实时连接的功能未完整验证",
         origin: "environment",
       });
       ws.close();
@@ -158,14 +177,18 @@ export async function createSession(config: ReviewConfig, report: Report, signal
       }),
     );
     page.on("response", (response) => {
-      if (response.status() >= 400)
-        record({
-          viewport: viewport.name,
-          kind: "http",
-          message: `HTTP ${response.status()} ${response.request().resourceType()}`,
-          url: redactUrl(response.url()),
-          origin: origin(response.url()),
-        });
+      if (response.status() < 400) return;
+      const headers = response.headers();
+      const proxyChallenge =
+        response.status() === 407 && (headers["proxy-authenticate"] ?? "").includes('realm="AestheticFlow"');
+      if (proxyChallenge) return;
+      record({
+        viewport: viewport.name,
+        kind: "http",
+        message: `HTTP ${response.status()} ${response.request().resourceType()}`,
+        url: redactUrl(response.url()),
+        origin: origin(response.url()),
+      });
     });
     page.on("dialog", (dialog) => {
       record({
@@ -180,7 +203,7 @@ export async function createSession(config: ReviewConfig, report: Report, signal
       record({
         viewport: viewport.name,
         kind: "environment",
-        message: "新窗口已关闭；第一版不验证弹出窗口流程",
+        message: "新窗口已关闭；当前版本不验证弹出窗口流程",
         origin: "environment",
       });
       void popup.close().catch(() => {});

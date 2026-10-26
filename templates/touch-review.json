@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:4173/good",
+  "browser": "chromium",
+  "project": "Fieldnotes · touch input",
+  "output": "artifacts/touch",
+  "timeoutMs": 5000,
+  "waitMs": 100,
+  "viewports": [
+    {
+      "name": "mobile-touch",
+      "width": 390,
+      "height": 844,
+      "touch": true
+    }
+  ],
+  "interactions": [
+    {
+      "name": "tap-menu",
+      "description": "验证触屏 tap 能打开移动端菜单；不模拟设备型号或手势轨迹。",
+      "steps": [
+        {
+          "action": "tap",
+          "target": {
+            "css": "#menu-toggle"
+          }
+        },
+        {
+          "action": "expectVisible",
+          "target": {
+            "css": "#menu"
+          }
+        }
+      ]
+    }
+  ]
+}

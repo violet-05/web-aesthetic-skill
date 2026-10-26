@@ -1,0 +1,24 @@
+{
+  "url": "http://127.0.0.1:4173/cases/nested-scroll",
+  "browser": "chromium",
+  "project": "嵌套滚动 · lazy evidence",
+  "output": "artifacts/nested-scroll",
+  "viewports": [
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "reviewTimeoutMs": 30000,
+  "lazyLoad": {
+    "enabled": true,
+    "maxScrolls": 12,
+    "waitMs": 150,
+    "maxDurationMs": 5000,
+    "scrollContainers": {
+      "enabled": true,
+      "maxContainers": 8
+    }
+  }
+}

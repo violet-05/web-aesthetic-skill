@@ -51,12 +51,16 @@ description: Design, implement, review and refine web interfaces using product-s
 web-aesthetic inspect-project
 web-aesthetic skill-check
 web-aesthetic review --url http://127.0.0.1:3000 --output artifacts/review
+web-aesthetic review --url http://127.0.0.1:3000 --browser firefox
+web-aesthetic review --url http://127.0.0.1:3000 --update-pixel-baseline
+web-aesthetic review --url http://127.0.0.1:3000 --pixel-baseline
+web-aesthetic matrix --url http://127.0.0.1:3000 --browsers chromium,firefox,webkit
 web-aesthetic review --config review-config.json
 ~~~
 
 在本项目源码目录也可运行 node dist/cli.js（需先 npm ci && npm run build）。Skill 被安装到其他项目时，不要在目标项目中盲目运行本工具的 npm scripts；使用已安装 CLI 或本工具绝对路径。
 
-按 [浏览器流程](workflows/browser-review.md) 和 [交互流程](workflows/interaction-review.md) 执行。默认 1440×900、768×1024、390×844，可通过配置改写。截图、错误、测量与交互断言保存在独立运行目录。0.2可选lazyLoad触发有界文档滚动、stepScreenshots保留断言/步骤中间截图，默认均关闭。开启前考虑页面副作用、时间与截图隐私；未覆盖内容仍标未知。reviewTimeoutMs默认120秒，到期或用户取消必须保留已完成证据，剩余项不能算通过。采用语义定位器及明确断言；没有配置场景就报告交互未执行，不随机点击全部按钮。
+按 [浏览器流程](workflows/browser-review.md) 和 [交互流程](workflows/interaction-review.md) 执行。默认 1440×900、768×1024、390×844，可通过配置改写；browser 一次选择 Chromium、Firefox 或 WebKit，matrix 用同一配置运行多个引擎并生成独立报告与状态差异汇总。viewports.touch=true 才执行 tap，touch 不等于模拟具体设备。截图、错误、测量与交互断言保存在独立运行目录。可选 lazyLoad 触发有界文档与嵌套容器滚动，stepScreenshots 保留断言/步骤中间截图，pixelBaseline 对同浏览器/URL/视口截图做阈值比较并可用 mask 排除动态区域，默认均关闭。缺失基线、尺寸/浏览器版本变化、截图截断与遮罩缺失必须标 unknown；像素差不是审美分数。开启前考虑页面副作用、时间与截图隐私；未覆盖内容仍标未知。reviewTimeoutMs 默认120秒，matrix 另有总时限；到期或用户取消必须保留已完成证据，剩余项不能算通过。采用语义定位器及明确断言；没有配置场景就报告交互未执行，不随机点击全部按钮。
 
 ## 5. 视觉审查与问题分级
 

@@ -13,6 +13,7 @@ import { startFixtureServer } from "../fixtures/server.js";
 
 const mobile = { name: "mobile", width: 390, height: 844 };
 const base = { viewports: [mobile], waitMs: 50, timeoutMs: 1500 };
+const engineNames = { chromium: "Chromium", firefox: "Firefox", webkit: "WebKit" } as const;
 async function output() {
   return mkdtemp(join(tmpdir(), "aesthetic-followup-"));
 }
@@ -42,6 +43,154 @@ test("bounded lazy loading turns an unloaded real observer image into measured l
         "bottom-stable",
       ),
     );
+  } finally {
+    await server.close();
+  }
+});
+for (const engine of ["chromium", "firefox", "webkit"] as const)
+  test(`review runs against the real ${engine} engine`, { timeout: 30000 }, async () => {
+    const server = await startFixtureServer();
+    try {
+      const { report } = await review(
+        configSchema.parse({
+          ...base,
+          browser: engine,
+          url: `${server.url}/good`,
+          output: await output(),
+          timeoutMs: 10000,
+        }),
+      );
+      assert.equal(report.browser.name, engineNames[engine]);
+      assert.notEqual(report.browser.version, "not-started");
+      assert.equal(report.execution?.status, "completed");
+      assert.equal(report.screenshots.length, 1);
+      assert.equal(report.summary.errors, 0);
+      assert.equal(report.checks.find((check) => check.id === "navigation")?.status, "pass");
+      assert.equal(report.diagnostics.length, 0);
+    } finally {
+      await server.close();
+    }
+  });
+test("touch viewport enables a real tap interaction and reports the pointer source", {
+  timeout: 30000,
+}, async () => {
+  const server = await startFixtureServer();
+  try {
+    const { report } = await review(
+      configSchema.parse({
+        ...base,
+        url: `${server.url}/cases/touch-target`,
+        output: await output(),
+        viewports: [{ ...mobile, touch: true }],
+        interactions: [
+          {
+            name: "touch",
+            steps: [
+              { action: "tap", target: { css: "#touch-target" } },
+              { action: "expectText", target: { css: "#touch-status" }, text: "pointer:touch" },
+            ],
+          },
+        ],
+      }),
+    );
+    const interaction = report.checks.find((check) => check.id === "interaction.touch");
+    assert.ok(interaction);
+    assert.equal(interaction?.status, "pass");
+    assert.equal(
+      (interaction.evidence.steps as Array<{ evidence?: { action?: string } }>)[0]?.evidence?.action,
+      "tap",
+    );
+    assert.equal(report.viewports[0]?.touch, true);
+  } finally {
+    await server.close();
+  }
+});
+test("tap on a non-touch viewport fails explicitly instead of falling back to click", {
+  timeout: 30000,
+}, async () => {
+  const server = await startFixtureServer();
+  try {
+    const { report } = await review(
+      configSchema.parse({
+        ...base,
+        url: `${server.url}/cases/touch-target`,
+        output: await output(),
+        interactions: [
+          {
+            name: "touch-required",
+            steps: [{ action: "tap", target: { css: "#touch-target" } }],
+          },
+        ],
+      }),
+    );
+    const interaction = report.checks.find((check) => check.id === "interaction.touch-required");
+    assert.ok(interaction);
+    assert.equal(interaction?.status, "fail");
+    assert.match(String((interaction.evidence.steps as Array<{ error?: string }>)[0]?.error), /touch: true/);
+  } finally {
+    await server.close();
+  }
+});
+test("nested scroll containers are optional and can trigger their own lazy content", {
+  timeout: 30000,
+}, async () => {
+  const server = await startFixtureServer();
+  try {
+    const { report } = await review(
+      configSchema.parse({
+        ...base,
+        url: `${server.url}/cases/nested-scroll`,
+        output: await output(),
+        lazyLoad: {
+          enabled: true,
+          maxScrolls: 12,
+          waitMs: 60,
+          maxDurationMs: 4000,
+          scrollContainers: { enabled: true, maxContainers: 4 },
+        },
+      }),
+    );
+    const prep = report.checks.find((check) => check.id === "images.lazy-load");
+    assert.equal(prep?.status, "pass");
+    assert.equal(prep.evidence.containerScan, "enabled");
+    assert.equal(prep.evidence.detectedContainers, 1);
+    assert.equal(prep.evidence.restored, true);
+    assert.equal(
+      (prep.evidence.containers as Array<{ complete: boolean; restored: boolean }>)[0]?.complete,
+      true,
+    );
+    assert.equal(
+      (prep.evidence.containers as Array<{ complete: boolean; restored: boolean }>)[0]?.restored,
+      true,
+    );
+    assert.equal(report.checks.find((check) => check.id === "images.loaded")?.status, "pass");
+  } finally {
+    await server.close();
+  }
+});
+test("an infinite nested list stays unknown when the shared scroll cap is reached", {
+  timeout: 30000,
+}, async () => {
+  const server = await startFixtureServer();
+  try {
+    const { report } = await review(
+      configSchema.parse({
+        ...base,
+        url: `${server.url}/cases/nested-infinite`,
+        output: await output(),
+        lazyLoad: {
+          enabled: true,
+          maxScrolls: 2,
+          waitMs: 40,
+          maxDurationMs: 3000,
+          scrollContainers: { enabled: true, maxContainers: 4 },
+        },
+      }),
+    );
+    const prep = report.checks.find((check) => check.id === "images.lazy-load");
+    assert.equal(prep?.status, "unknown");
+    assert.equal(prep.evidence.stopReason, "max-scrolls");
+    assert.equal((prep.evidence.containers as Array<{ stopReason: string }>)[0]?.stopReason, "max-scrolls");
   } finally {
     await server.close();
   }

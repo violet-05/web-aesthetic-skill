@@ -2,7 +2,7 @@
 
 ## 运行环境
 
-Node.js >=22、npm、可安装 Playwright Chromium 的系统。本次开发环境为 Windows、Node 24.11.0、npm 11.6.1。依赖由 package-lock.json 固定，安装使用 npm ci，不用无版本的全局依赖替代。
+Node.js >=22、npm、可安装 Playwright Chromium 的系统。跨引擎验证还需 Firefox 与 WebKit。本次开发环境为 Windows、Node 24.11.0、npm 11.6.1。依赖由 package-lock.json 固定，安装使用 npm ci，不用无版本的全局依赖替代。
 
 在本工具源码目录执行：
 
@@ -14,7 +14,7 @@ node dist/cli.js --help
 npm run skill-check
 ~~~
 
-Linux 可按 Playwright 官方说明使用 npx playwright install --with-deps chromium；该命令会涉及系统包权限，本项目没有在 Linux 执行。不要为了启动方便默认关闭浏览器 sandbox。
+仅用默认 Chromium 时保留上述命令；完整验证运行 npx playwright install --with-deps chromium firefox webkit。Linux 安装系统依赖涉及包权限，应在理解影响后执行。不要为了启动方便默认关闭浏览器 sandbox。
 
 ## CLI 安装
 
@@ -28,7 +28,7 @@ npm link
 
 ~~~sh
 npm pack
-npm install -g ./web-aesthetic-skill-0.2.0.tgz
+npm install -g ./web-aesthetic-skill-0.5.0.tgz
 web-aesthetic --version
 ~~~
 

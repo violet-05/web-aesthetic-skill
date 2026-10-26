@@ -31,8 +31,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Install Chromium and platform dependencies
-        run: npx playwright install --with-deps chromium
+      - name: Install Chromium, Firefox, WebKit and platform dependencies
+        run: npx playwright install --with-deps chromium firefox webkit
       # Ubuntu AppArmor restricts downloaded browser binaries from creating user namespaces.
       # Allow only the exact installed Chromium executables in this disposable hosted runner;
       # never turn off Chromium sandboxing or the machine-wide AppArmor restriction.

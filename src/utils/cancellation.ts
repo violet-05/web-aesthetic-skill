@@ -57,7 +57,10 @@ export async function pause(ms: number, signal?: AbortSignal): Promise<void> {
 export function createReviewDeadline(timeoutMs: number, external?: AbortSignal) {
   const controller = new AbortController();
   const started = Date.now();
-  const cancel = () => controller.abort(new ReviewCancelledError());
+  const cancel = () =>
+    controller.abort(
+      external?.reason instanceof ReviewTimeoutError ? external.reason : new ReviewCancelledError(),
+    );
   if (external?.aborted) cancel();
   else external?.addEventListener("abort", cancel, { once: true });
   const timer = setTimeout(() => controller.abort(new ReviewTimeoutError(timeoutMs)), timeoutMs);

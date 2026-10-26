@@ -43,6 +43,9 @@ export interface Screenshot {
   stepIndex?: number;
   action?: string;
   scope?: "page" | "viewport";
+  kind?: "browser" | "diff";
+  maskSelectors?: string[];
+  maskMissing?: string[];
 }
 export interface DimensionResult {
   dimension: Dimension;
@@ -56,7 +59,7 @@ export interface DimensionResult {
   needsHumanReview: true;
 }
 export interface Report {
-  schemaVersion: "1.0" | "1.1";
+  schemaVersion: "1.0" | "1.1" | "1.2" | "1.3";
   toolVersion?: string;
   execution?: {
     status: "completed" | "timed-out" | "cancelled" | "error";

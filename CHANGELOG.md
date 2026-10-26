@@ -1,5 +1,33 @@
 # 变更记录
 
+## 0.5.0 — 2026-10-26
+
+- 新增可选像素基线比较与更新模式，按浏览器、完整 URL、视口和 touch 上下文隔离。
+- 基线目录保存稳定 PNG 与 manifest；比较生成像素占比、阈值证据和 diff PNG。
+- 支持最多 20 个唯一 CSS selector 动态遮罩，遮罩在截图阶段以黑色覆盖并应用到该轮全部截图。
+- 缺失基线、截图截断、遮罩未匹配、尺寸变化或浏览器版本变化均保持 unknown，不伪造回归。
+- 超过阈值的像素差产生 P2 issue 与 diff 证据，明确不解释为审美下降。
+- 报告升级schema1.3，矩阵升级schema1.1；像素基线配置进入verificationProfile。
+- 新增pixelmatch/pngjs依赖与真实动态区域回归；视觉模型与自主修复仍未实现。
+
+## 0.4.0 — 2026-10-26
+
+- 新增 matrix 单命令跨引擎审查，默认顺序运行 Chromium、Firefox、WebKit，并共享一个可配置总时限。
+- 每个引擎保留完整独立 report.html/report.json；矩阵根目录生成 report.html、matrix.json、metadata.json。
+- 聚合按 viewport + check id 对齐，区分状态差异、失败差异和缺失检查，并保留问题所属引擎。
+- 矩阵执行状态区分 completed/partial/timed-out/cancelled/error；超时后的剩余引擎明确 not-run，不用其他引擎结果补位。
+- 修复父子 deadline 的 timeout/cancelled 原因传播，矩阵超时不会误记成普通用户取消。
+- 增加真实三引擎矩阵、矩阵超时、CLI、聚合与 HTML 转义回归；像素基线、视觉模型和自主修复仍未实现。
+
+## 0.3.0 — 2026-10-26
+
+- 单次审查可选Chromium、Firefox或WebKit；不同引擎分别生成报告，不合并为一轮通过。
+- 视口可选touch上下文，新增tap动作；tap在非触屏视口明确失败，不静默替换为鼠标。
+- lazyLoad可选自动发现有界嵌套滚动容器，容器与文档共享滚动/时间预算，并恢复各目标原位置。
+- 嵌套无限列表、容器数量、图片样本或时间预算耗尽时保持unknown，并记录container-limit/max-scrolls/time-budget/sample-limit。
+- 报告升级schema1.2；浏览器引擎、touch与嵌套滚动预算进入verificationProfile，跨引擎或变更配置不能宣称修复。
+- 增加三引擎真实启动、触屏tap和嵌套滚动回归；像素基线、单命令矩阵、视觉模型与自主修复仍未实现。
+
 ## 0.2.0 — 2026-10-26
 
 - 可选有界文档滚动预处理，记录稳定底部/滚动上限/时间上限与恢复位置。

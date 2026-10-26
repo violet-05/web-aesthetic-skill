@@ -9,6 +9,7 @@ export async function executeStep(
   step: Step,
   timeoutMs: number,
   signal?: AbortSignal,
+  hasTouch = false,
 ): Promise<Record<string, unknown>> {
   if (step.action === "expectUrl") {
     const expected = new URL(step.url, page.url()).href;
@@ -20,6 +21,10 @@ export async function executeStep(
     case "click":
       await loc.click();
       return { action: "click", target: step.target };
+    case "tap":
+      if (!hasTouch) throw new Error("tap 需要当前视口配置 touch: true");
+      await loc.tap();
+      return { action: "tap", target: step.target };
     case "fill":
       await loc.fill(step.value);
       return { action: "fill", target: step.target, value: "[not recorded]" };
@@ -101,6 +106,8 @@ export async function runScenario(
   let failed = false;
   let interrupted = false;
   let focusUncertain = false;
+  const hasTouch =
+    config.viewports.find((viewportConfig) => viewportConfig.name === viewport)?.touch ?? false;
   for (const [index, step] of scenario.steps.entries()) {
     if (failed || interrupted) {
       results.push({
@@ -115,7 +122,7 @@ export async function runScenario(
     try {
       throwIfAborted(options.signal);
       const evidence = await abortable(
-        executeStep(page, step, config.timeoutMs, options.signal),
+        executeStep(page, step, config.timeoutMs, options.signal, hasTouch),
         options.signal,
       );
       if (step.action === "checkFocusIndicator" && evidence.likelyVisible === false) focusUncertain = true;

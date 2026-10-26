@@ -1,5 +1,6 @@
 {
   "url": "http://127.0.0.1:3000",
+  "browser": "chromium",
   "project": "你的项目",
   "output": "artifacts/demo",
   "requiredElements": [
@@ -22,13 +23,24 @@
     {
       "name": "mobile",
       "width": 390,
-      "height": 844
+      "height": 844,
+      "touch": true
     }
   ],
   "allowOrigins": [],
   "allowPrivateNetwork": false,
   "waitMs": 300,
   "timeoutMs": 10000,
+  "pixelBaseline": {
+    "enabled": false,
+    "mode": "compare",
+    "directory": "artifacts/pixel-baselines",
+    "maxDiffPixelRatio": 0.005,
+    "threshold": 0.1,
+    "includeAA": false,
+    "maxPixels": 20000000,
+    "masks": []
+  },
   "maxIterations": 3,
   "failOn": "P1",
   "weights": {
