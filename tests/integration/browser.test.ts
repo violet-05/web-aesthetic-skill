@@ -26,7 +26,15 @@ test("real Chromium: three viewports, PNG evidence, menus/dialog/forms/navigatio
     });
     const { report, directory } = await review(config);
     assert.equal(report.summary.failed, 0, JSON.stringify(report.issues));
-    assert.equal(report.summary.errors, 0);
+    assert.equal(
+      report.summary.errors,
+      0,
+      JSON.stringify(
+        report.checks.filter((check) => check.status === "error"),
+        null,
+        2,
+      ),
+    );
     assert.equal(report.issues.length, 0);
     assert.equal(report.status, "incomplete");
     assert.equal(report.screenshots.length, 18);
